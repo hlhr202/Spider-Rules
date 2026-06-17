@@ -1,0 +1,16 @@
+[package]
+name = "spider-rules"
+version = "0.2.0"
+edition = "2024"
+description = "Spider/crawler identification rules"
+license = "MIT"
+publish = false
+
+[lib]
+name = "spider_rules"
+
+[[bin]]
+name = "spider_rules"
+path = "src/main.rs"
+
+[dependencies]
