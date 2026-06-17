@@ -3,6 +3,8 @@ name = "spider-rules"
 version = "0.2.0"
 edition = "2024"
 description = "Spider/crawler identification rules"
+readme = "README.md"
+repository = "https://github.com/hlhr202/Spider-Rules"
 license = "MIT"
 publish = false
 
