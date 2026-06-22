@@ -15,10 +15,12 @@ fn main() {
 
     match identify(&ua) {
         Some(id) => {
+            let origin = id.fetch_origin();
             println!(
-                "Matched: token={}, category={}",
+                "Matched: token={}, category={}, fetch_origin={}",
                 id.token,
-                id.category.as_str()
+                id.category.as_str(),
+                origin.as_str(),
             );
         }
         None => println!("No match"),

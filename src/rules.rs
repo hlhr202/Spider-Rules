@@ -1,4 +1,4 @@
-use crate::token_cat::UserAgentTokenCategory;
+use crate::token_cat::{FetchOrigin, UserAgentTokenCategory};
 
 /// The result of matching a User-Agent against the static rule table.
 ///
@@ -9,6 +9,72 @@ use crate::token_cat::UserAgentTokenCategory;
 pub struct Identification {
     pub token: &'static str,
     pub category: UserAgentTokenCategory,
+}
+
+impl Identification {
+    /// Returns the [`FetchOrigin`] for this matched rule.
+    ///
+    /// Derived from `token` rather than stored as a struct field so that the
+    /// static rule table stays focused on the token→category mapping. The
+    /// token already uniquely identifies a rule, so the fetch origin is a
+    /// pure function of the token.
+    ///
+    /// The classification is cross-verified against official documentation
+    /// from Google ("user-triggered fetchers") and OpenAI (`ChatGPT-User`
+    /// is "not used for crawling the web in an automatic fashion").
+    pub fn fetch_origin(&self) -> FetchOrigin {
+        match self.token {
+            // --- UserTriggeredFetch: user triggered, fetch-only ---
+            //
+            // Cross-verified: OpenAI confirms ChatGPT-User is user-initiated
+            // and "not used for crawling the web in an automatic fashion".
+            // The `*-user` naming convention is consistent across providers.
+            "chatgpt-user"
+            | "claude-user"
+            | "perplexity-user"
+            | "amzn-user"
+            | "mistralai-user" => FetchOrigin::UserTriggeredFetch,
+
+            // Deep-research / deep-search tools are user-initiated research
+            // sessions. They browse and synthesize content but do not complete
+            // purchase/signup actions on behalf of the user.
+            "gemini-deep-research"
+            | "grok-deepsearch" => FetchOrigin::UserTriggeredFetch,
+
+            // Google Read-Aloud is triggered when a user clicks the "read
+            // aloud" button; it only retrieves page content for TTS.
+            // Inferred from product behaviour; Google's overview page lists
+            // "user-triggered fetchers" as a category but does not publish a
+            // per-UA mapping.
+            "google-read-aloud" => FetchOrigin::UserTriggeredFetch,
+
+            // YandexUserProxy proxies a real user's request.
+            "yandexuserproxy" => FetchOrigin::UserTriggeredFetch,
+
+            // --- UserTriggeredAgentic: user triggered, can interact ---
+            //
+            // GoogleAgent-Mariner is Google's Project Mariner agentic browser.
+            // It can click, fill forms, and navigate on behalf of the user.
+            // Inferred from Project Mariner's public description; no official
+            // UA-level documentation has been published.
+            "googleagent" => FetchOrigin::UserTriggeredAgentic,
+
+            // --- Everything else: autonomous crawl ---
+            //
+            // This covers all common crawlers (Googlebot, Bingbot, …),
+            // special-case crawlers (AdsBot-Google, …), AI training/search
+            // crawlers (GPTBot, OAI-SearchBot, ClaudeBot, …), SEO bots,
+            // social preview fetchers, and uptime monitors.
+            _ => FetchOrigin::Autonomous,
+        }
+    }
+
+    /// Convenience: `true` when a real user is behind the request.
+    ///
+    /// Equivalent to `self.fetch_origin().is_user_initiated()`.
+    pub fn is_user_initiated(&self) -> bool {
+        self.fetch_origin().is_user_initiated()
+    }
 }
 
 pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[

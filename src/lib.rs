@@ -28,16 +28,34 @@
 //! | [`SeoMarketingCrawler`][UserAgentTokenCategory::SeoMarketingCrawler] | AhrefsBot, SemrushBot, MJ12bot, DotBot |
 //! | [`SocialLinkPreviewFetcher`][UserAgentTokenCategory::SocialLinkPreviewFetcher] | facebookexternalhit, Slackbot, Twitterbot, WhatsApp |
 //! | [`UptimeMonitor`][UserAgentTokenCategory::UptimeMonitor] | Pingdom, UptimeRobot, Site24x7, StatusCake |
+//!
+//! # Fetch origin
+//!
+//! [`Identification::fetch_origin`] provides an orthogonal axis to
+//! [`UserAgentTokenCategory`]: whether the request was triggered by a real
+//! human user and whether the tool can interact with the page. Ad networks
+//! use this to decide whether a conversion should pass:
+//!
+//! | [`FetchOrigin`] | CPC | CPA |
+//! |---|---|---|
+//! | [`Autonomous`][FetchOrigin::Autonomous] | block | block |
+//! | [`UserTriggeredFetch`][FetchOrigin::UserTriggeredFetch] | allow | allow attribution; conversion requires real-user action |
+//! | [`UserTriggeredAgentic`][FetchOrigin::UserTriggeredAgentic] | allow | configurable — default block/flag |
+//!
+//! The classification is cross-verified against Google's official
+//! "user-triggered fetchers" category and OpenAI's `ChatGPT-User`
+//! documentation.
 
 mod rules;
 mod token_cat;
 
 pub use rules::{Identification, identify};
-pub use token_cat::UserAgentTokenCategory;
+pub use token_cat::{FetchOrigin, UserAgentTokenCategory};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use FetchOrigin::*;
     use UserAgentTokenCategory::*;
 
     #[test]
@@ -271,5 +289,77 @@ mod tests {
             assert_eq!(id.token, *expected_token, "ua={ua:?}");
             assert_eq!(id.category, UserAgentTokenCategory::UptimeMonitor, "ua={ua:?}");
         }
+    }
+
+    // -----------------------------------------------------------------
+    // FetchOrigin tests
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn fetch_origin_user_triggered_family() {
+        // *-user 族：全部 UserTriggeredFetch
+        // Cross-verified: OpenAI confirms ChatGPT-User is user-initiated.
+        for ua in [
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+            "Mozilla/5.0 (compatible; Claude-User/1.0)",
+            "Mozilla/5.0 (compatible; Perplexity-User/1.0)",
+            "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amzn-User/0.1) Chrome/119.0",
+            "Mozilla/5.0 (compatible; MistralAI-User/1.0)",
+        ] {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(
+                id.fetch_origin(),
+                UserTriggeredFetch,
+                "ua={ua:?}"
+            );
+            assert!(id.is_user_initiated(), "ua={ua:?}");
+        }
+    }
+
+    #[test]
+    fn fetch_origin_deep_research_and_tools() {
+        for (ua, expected) in [
+            ("Gemini-Deep-Research/1.0", UserTriggeredFetch),
+            ("Grok-DeepSearch/1.0", UserTriggeredFetch),
+            ("Mozilla/5.0 (compatible; Google-Read-Aloud/2.0)", UserTriggeredFetch),
+            ("Mozilla/5.0 (compatible; YandexUserProxy/1.0)", UserTriggeredFetch),
+        ] {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.fetch_origin(), expected, "ua={ua:?}");
+            assert!(id.is_user_initiated(), "ua={ua:?}");
+        }
+    }
+
+    #[test]
+    fn fetch_origin_agentic_mariner() {
+        let ua = "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; \
+            GoogleAgent-Mariner/1.0; +https://google.com";
+        let id = identify(ua).expect("Mariner should match");
+        assert_eq!(id.fetch_origin(), UserTriggeredAgentic);
+        assert!(id.is_user_initiated());
+    }
+
+    #[test]
+    fn fetch_origin_autonomous_for_crawlers() {
+        for ua in [
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+            "GPTBot/1.0",
+            "Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)",
+            "Mozilla/5.0 (compatible; Pingdom.com_bot_version_1.4; +https://pingdom.com)",
+            // oai-searchbot / claude-searchbot are search crawlers, not user-initiated
+            "Mozilla/5.0 (compatible; OAI-SearchBot/1.0; +https://openai.com/)",
+            "Claude-SearchBot/1.0",
+        ] {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.fetch_origin(), Autonomous, "ua={ua:?}");
+            assert!(!id.is_user_initiated(), "ua={ua:?}");
+        }
+    }
+
+    #[test]
+    fn fetch_origin_as_str_stable() {
+        assert_eq!(Autonomous.as_str(), "autonomous");
+        assert_eq!(UserTriggeredFetch.as_str(), "user_triggered_fetch");
+        assert_eq!(UserTriggeredAgentic.as_str(), "user_triggered_agentic");
     }
 }
