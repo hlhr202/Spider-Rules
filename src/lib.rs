@@ -24,9 +24,9 @@
 //! |---|---|
 //! | [`AiSearchAnswerCrawler`][UserAgentTokenCategory::AiSearchAnswerCrawler] | GPTBot, ClaudeBot, anthropic-ai, PerplexityBot, Bytespider |
 //! | [`SearchIndexCrawler`][UserAgentTokenCategory::SearchIndexCrawler] | Googlebot, Bingbot, DuckDuckBot, Baiduspider |
-//! | [`AdPlatformValidator`][UserAgentTokenCategory::AdPlatformValidator] | AdsBot-Google, Mediapartners-Google, YandexDirect |
-//! | [`SeoMarketingCrawler`][UserAgentTokenCategory::SeoMarketingCrawler] | AhrefsBot, SemrushBot, MJ12bot, DotBot |
-//! | [`SocialLinkPreviewFetcher`][UserAgentTokenCategory::SocialLinkPreviewFetcher] | facebookexternalhit, Slackbot, Twitterbot, WhatsApp |
+//! | [`AdPlatformValidator`][UserAgentTokenCategory::AdPlatformValidator] | AdsBot-Google, Google-AdWords-Express, Mediapartners-Google |
+//! | [`SeoMarketingCrawler`][UserAgentTokenCategory::SeoMarketingCrawler] | AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot |
+//! | [`SocialLinkPreviewFetcher`][UserAgentTokenCategory::SocialLinkPreviewFetcher] | facebookexternalhit, Slackbot, LarkUrl, WhatsApp |
 //! | [`UptimeMonitor`][UserAgentTokenCategory::UptimeMonitor] | Pingdom, UptimeRobot, Site24x7, StatusCake |
 //!
 //! # Fetch origin
@@ -218,10 +218,22 @@ mod tests {
     #[test]
     fn new_ai_crawlers_match() {
         let cases: &[(&str, &str)] = &[
-            ("Mozilla/5.0 (compatible; anthropic-ai/1.0; +http://www.anthropic.com/bot.html)", "anthropic-ai"),
-            ("DuckAssistBot/1.2; (+http://duckduckgo.com/duckassistbot.html)", "duckassistbot"),
-            ("Mozilla/5.0 (compatible; cohere-ai/1.0; +http://www.cohere.ai/bot.html)", "cohere-ai"),
-            ("Mozilla/5.0 (compatible; Diffbot/0.1; +http://www.diffbot.com)", "diffbot"),
+            (
+                "Mozilla/5.0 (compatible; anthropic-ai/1.0; +http://www.anthropic.com/bot.html)",
+                "anthropic-ai",
+            ),
+            (
+                "DuckAssistBot/1.2; (+http://duckduckgo.com/duckassistbot.html)",
+                "duckassistbot",
+            ),
+            (
+                "Mozilla/5.0 (compatible; cohere-ai/1.0; +http://www.cohere.ai/bot.html)",
+                "cohere-ai",
+            ),
+            (
+                "Mozilla/5.0 (compatible; Diffbot/0.1; +http://www.diffbot.com)",
+                "diffbot",
+            ),
         ];
         for (ua, expected_token) in cases {
             let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
@@ -277,17 +289,83 @@ mod tests {
     }
 
     #[test]
+    fn new_marketing_and_preview_tokens_match() {
+        let cases: &[(&str, &str, UserAgentTokenCategory)] = &[
+            (
+                "Mozilla/5.0 (compatible; BacklinksExtendedBot)",
+                "backlinksextendedbot",
+                SeoMarketingCrawler,
+            ),
+            (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 \
+                (KHTML, like Gecko) Chrome/91.0.4450.0 Safari/537.36 LarkUrl",
+                "larkurl",
+                SocialLinkPreviewFetcher,
+            ),
+            (
+                "Google-AdWords-Express",
+                "google-adwords-express",
+                AdPlatformValidator,
+            ),
+            (
+                "Google-Ads-Creatives-Assistant",
+                "google-ads-creatives-assistant",
+                AdPlatformValidator,
+            ),
+            (
+                "Google-Adwords-Instant (+http://www.google.com/adsbot.html)",
+                "google-adwords-instant",
+                AdPlatformValidator,
+            ),
+            (
+                "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) \
+                AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.7827.155 \
+                Mobile Safari/537.36 (compatible; Google-Adwords-Instant-Mobile; \
+                +http://www.google.com/mobile/adsbot.html)",
+                "google-adwords-instant-mobile",
+                AdPlatformValidator,
+            ),
+            (
+                "Mozilla/5.0 (en-us) AppleWebKit/537.36(KHTML, like Gecko; \
+                Google-Adwords-DisplayAds-WebRender;) Chrome/148.0.7778.96Safari/537.36",
+                "google-adwords-displayads-webrender",
+                AdPlatformValidator,
+            ),
+        ];
+
+        for (ua, expected_token, expected_cat) in cases {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.token, *expected_token, "ua={ua:?}");
+            assert_eq!(id.category, *expected_cat, "ua={ua:?}");
+            assert_eq!(id.fetch_origin(), Autonomous, "ua={ua:?}");
+        }
+    }
+
+    #[test]
     fn uptime_monitor_tokens_match() {
         let cases: &[(&str, &str)] = &[
-            ("Mozilla/5.0 (compatible; Pingdom.com_bot_version_1.4; +https://pingdom.com)", "pingdom"),
-            ("Mozilla/5.0 (compatible; UptimeRobot/2.0; http://uptimerobot.com/)", "uptimerobot"),
+            (
+                "Mozilla/5.0 (compatible; Pingdom.com_bot_version_1.4; +https://pingdom.com)",
+                "pingdom",
+            ),
+            (
+                "Mozilla/5.0 (compatible; UptimeRobot/2.0; http://uptimerobot.com/)",
+                "uptimerobot",
+            ),
             ("Mozilla/5.0 (compatible; Site24x7)", "site24x7"),
-            ("Mozilla/5.0 (compatible; NewRelicPinger/1.0)", "newrelicpinger"),
+            (
+                "Mozilla/5.0 (compatible; NewRelicPinger/1.0)",
+                "newrelicpinger",
+            ),
         ];
         for (ua, expected_token) in cases {
             let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
             assert_eq!(id.token, *expected_token, "ua={ua:?}");
-            assert_eq!(id.category, UserAgentTokenCategory::UptimeMonitor, "ua={ua:?}");
+            assert_eq!(
+                id.category,
+                UserAgentTokenCategory::UptimeMonitor,
+                "ua={ua:?}"
+            );
         }
     }
 
@@ -307,11 +385,7 @@ mod tests {
             "Mozilla/5.0 (compatible; MistralAI-User/1.0)",
         ] {
             let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
-            assert_eq!(
-                id.fetch_origin(),
-                UserTriggeredFetch,
-                "ua={ua:?}"
-            );
+            assert_eq!(id.fetch_origin(), UserTriggeredFetch, "ua={ua:?}");
             assert!(id.is_user_initiated(), "ua={ua:?}");
         }
     }
@@ -321,8 +395,14 @@ mod tests {
         for (ua, expected) in [
             ("Gemini-Deep-Research/1.0", UserTriggeredFetch),
             ("Grok-DeepSearch/1.0", UserTriggeredFetch),
-            ("Mozilla/5.0 (compatible; Google-Read-Aloud/2.0)", UserTriggeredFetch),
-            ("Mozilla/5.0 (compatible; YandexUserProxy/1.0)", UserTriggeredFetch),
+            (
+                "Mozilla/5.0 (compatible; Google-Read-Aloud/2.0)",
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; YandexUserProxy/1.0)",
+                UserTriggeredFetch,
+            ),
         ] {
             let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
             assert_eq!(id.fetch_origin(), expected, "ua={ua:?}");

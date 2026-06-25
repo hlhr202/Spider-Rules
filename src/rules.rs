@@ -29,17 +29,14 @@ impl Identification {
             // Cross-verified: OpenAI confirms ChatGPT-User is user-initiated
             // and "not used for crawling the web in an automatic fashion".
             // The `*-user` naming convention is consistent across providers.
-            "chatgpt-user"
-            | "claude-user"
-            | "perplexity-user"
-            | "amzn-user"
-            | "mistralai-user" => FetchOrigin::UserTriggeredFetch,
+            "chatgpt-user" | "claude-user" | "perplexity-user" | "amzn-user" | "mistralai-user" => {
+                FetchOrigin::UserTriggeredFetch
+            }
 
             // Deep-research / deep-search tools are user-initiated research
             // sessions. They browse and synthesize content but do not complete
             // purchase/signup actions on behalf of the user.
-            "gemini-deep-research"
-            | "grok-deepsearch" => FetchOrigin::UserTriggeredFetch,
+            "gemini-deep-research" | "grok-deepsearch" => FetchOrigin::UserTriggeredFetch,
 
             // Google Read-Aloud is triggered when a user clicks the "read
             // aloud" button; it only retrieves page content for TTS.
@@ -477,6 +474,26 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::AdPlatformValidator,
     },
     Identification {
+        token: "google-adwords-express",
+        category: UserAgentTokenCategory::AdPlatformValidator,
+    },
+    Identification {
+        token: "google-ads-creatives-assistant",
+        category: UserAgentTokenCategory::AdPlatformValidator,
+    },
+    Identification {
+        token: "google-adwords-instant-mobile",
+        category: UserAgentTokenCategory::AdPlatformValidator,
+    },
+    Identification {
+        token: "google-adwords-instant",
+        category: UserAgentTokenCategory::AdPlatformValidator,
+    },
+    Identification {
+        token: "google-adwords-displayads-webrender",
+        category: UserAgentTokenCategory::AdPlatformValidator,
+    },
+    Identification {
         token: "mediapartners-google",
         category: UserAgentTokenCategory::AdPlatformValidator,
     },
@@ -614,6 +631,10 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::SeoMarketingCrawler,
     },
     Identification {
+        token: "backlinksextendedbot",
+        category: UserAgentTokenCategory::SeoMarketingCrawler,
+    },
+    Identification {
         token: "sistrix",
         category: UserAgentTokenCategory::SeoMarketingCrawler,
     },
@@ -659,6 +680,10 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
     },
     Identification {
         token: "linkedinbot",
+        category: UserAgentTokenCategory::SocialLinkPreviewFetcher,
+    },
+    Identification {
+        token: "larkurl",
         category: UserAgentTokenCategory::SocialLinkPreviewFetcher,
     },
     Identification {

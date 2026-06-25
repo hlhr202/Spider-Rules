@@ -13,13 +13,13 @@ pub enum UserAgentTokenCategory {
     /// Representative: Googlebot, Bingbot, DuckDuckBot, Baiduspider, Yandexbot.
     SearchIndexCrawler,
     /// Ad-platform validators / quality crawlers.
-    /// Representative: AdsBot-Google, Mediapartners-Google, YandexDirect.
+    /// Representative: AdsBot-Google, Google-AdWords-Express, Mediapartners-Google.
     AdPlatformValidator,
     /// SEO / marketing research crawlers.
-    /// Representative: AhrefsBot, SemrushBot, MJ12bot, DotBot.
+    /// Representative: AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot.
     SeoMarketingCrawler,
     /// Social / messaging link-preview fetchers.
-    /// Representative: facebookexternalhit, Slackbot, Twitterbot, WhatsApp.
+    /// Representative: facebookexternalhit, Slackbot, LarkUrl, WhatsApp.
     SocialLinkPreviewFetcher,
     /// Uptime / synthetic monitoring & ping checkers.
     /// Representative: Pingdom, UptimeRobot, Site24x7, StatusCake.
@@ -113,9 +113,6 @@ impl FetchOrigin {
     /// Convenience for ad-network callers that treat any user-initiated visit
     /// as a valid CPC click regardless of the tool's interaction capability.
     pub fn is_user_initiated(self) -> bool {
-        matches!(
-            self,
-            Self::UserTriggeredFetch | Self::UserTriggeredAgentic
-        )
+        matches!(self, Self::UserTriggeredFetch | Self::UserTriggeredAgentic)
     }
 }

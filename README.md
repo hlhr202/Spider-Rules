@@ -34,9 +34,9 @@ match identify(ua) {
 |---------------------------------|----------------------------------|--------------------------------------------------|
 | `AiSearchAnswerCrawler`         | `ai_search_answer_crawler`       | GPTBot, ClaudeBot, anthropic-ai, PerplexityBot, Bytespider  |
 | `SearchIndexCrawler`            | `search_index_crawler`           | Googlebot, Bingbot, DuckDuckBot, Baiduspider     |
-| `AdPlatformValidator`           | `ad_platform_validator`          | AdsBot-Google, Mediapartners-Google, YandexDirect|
-| `SeoMarketingCrawler`           | `seo_marketing_crawler`          | AhrefsBot, SemrushBot, MJ12bot, DotBot           |
-| `SocialLinkPreviewFetcher`      | `social_link_preview_fetcher`    | facebookexternalhit, Slackbot, Twitterbot, WhatsApp |
+| `AdPlatformValidator`           | `ad_platform_validator`          | AdsBot-Google, Google-AdWords-Express, Mediapartners-Google |
+| `SeoMarketingCrawler`           | `seo_marketing_crawler`          | AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot |
+| `SocialLinkPreviewFetcher`      | `social_link_preview_fetcher`    | facebookexternalhit, Slackbot, LarkUrl, WhatsApp |
 | `UptimeMonitor`                 | `uptime_monitor`                 | Pingdom, UptimeRobot, Site24x7, StatusCake       |
 
 ## Fetch origin
