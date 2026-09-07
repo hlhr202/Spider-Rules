@@ -36,7 +36,7 @@ match identify(ua) {
 | `SearchIndexCrawler`            | `search_index_crawler`           | Googlebot, Bingbot, DuckDuckBot, Baiduspider     |
 | `AdPlatformValidator`           | `ad_platform_validator`          | AdsBot-Google, Google-AdWords-Express, Mediapartners-Google |
 | `SeoMarketingCrawler`           | `seo_marketing_crawler`          | AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot |
-| `SocialLinkPreviewFetcher`      | `social_link_preview_fetcher`    | facebookexternalhit, Slackbot, LarkUrl, WhatsApp |
+| `SocialLinkPreviewFetcher`      | `social_link_preview_fetcher`    | facebookexternalhit, Slackbot, LarkUrl, WhatsApp, TikTokSpider |
 | `UptimeMonitor`                 | `uptime_monitor`                 | Pingdom, UptimeRobot, Site24x7, StatusCake       |
 
 ## Fetch origin

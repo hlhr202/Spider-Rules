@@ -19,7 +19,7 @@ pub enum UserAgentTokenCategory {
     /// Representative: AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot.
     SeoMarketingCrawler,
     /// Social / messaging link-preview fetchers.
-    /// Representative: facebookexternalhit, Slackbot, LarkUrl, WhatsApp.
+    /// Representative: facebookexternalhit, Slackbot, LarkUrl, WhatsApp, TikTokSpider.
     SocialLinkPreviewFetcher,
     /// Uptime / synthetic monitoring & ping checkers.
     /// Representative: Pingdom, UptimeRobot, Site24x7, StatusCake.

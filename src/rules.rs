@@ -675,6 +675,10 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::SocialLinkPreviewFetcher,
     },
     Identification {
+        token: "tiktokspider",
+        category: UserAgentTokenCategory::SocialLinkPreviewFetcher,
+    },
+    Identification {
         token: "discordbot",
         category: UserAgentTokenCategory::SocialLinkPreviewFetcher,
     },

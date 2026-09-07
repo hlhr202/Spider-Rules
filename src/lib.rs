@@ -26,7 +26,7 @@
 //! | [`SearchIndexCrawler`][UserAgentTokenCategory::SearchIndexCrawler] | Googlebot, Bingbot, DuckDuckBot, Baiduspider |
 //! | [`AdPlatformValidator`][UserAgentTokenCategory::AdPlatformValidator] | AdsBot-Google, Google-AdWords-Express, Mediapartners-Google |
 //! | [`SeoMarketingCrawler`][UserAgentTokenCategory::SeoMarketingCrawler] | AhrefsBot, SemrushBot, BacklinksExtendedBot, DotBot |
-//! | [`SocialLinkPreviewFetcher`][UserAgentTokenCategory::SocialLinkPreviewFetcher] | facebookexternalhit, Slackbot, LarkUrl, WhatsApp |
+//! | [`SocialLinkPreviewFetcher`][UserAgentTokenCategory::SocialLinkPreviewFetcher] | facebookexternalhit, Slackbot, LarkUrl, WhatsApp, TikTokSpider |
 //! | [`UptimeMonitor`][UserAgentTokenCategory::UptimeMonitor] | Pingdom, UptimeRobot, Site24x7, StatusCake |
 //!
 //! # Fetch origin
@@ -286,6 +286,37 @@ mod tests {
                 "removed token should not match; ua={ua:?}"
             );
         }
+    }
+
+    #[test]
+    fn tiktokspider_matches_but_bare_tiktok_does_not() {
+        let crawler = "Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) \
+            Mobile Safari/537.36 (compatible; TikTokSpider; ttspider-feedback@tiktok.com)";
+        let id = identify(crawler).expect("TikTokSpider should match");
+        assert_eq!(id.token, "tiktokspider");
+        assert_eq!(id.category, SocialLinkPreviewFetcher);
+        assert_eq!(id.fetch_origin(), Autonomous);
+
+        let crawler_alt = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) \
+            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36;\
+            TikTokSpider;ttspider-feedback@tiktok.com";
+        let id = identify(crawler_alt).expect("TikTokSpider alt UA should match");
+        assert_eq!(id.token, "tiktokspider");
+        assert_eq!(id.category, SocialLinkPreviewFetcher);
+
+        let human_like = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) \
+            AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 TikTok";
+        assert!(
+            identify(human_like).is_none(),
+            "bare 'TikTok' word must not match"
+        );
+
+        let bytespider = "Mozilla/5.0 (Linux; Android 8.0; Pixel 2 Build/OPD3.170816.012) \
+            AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Mobile Safari/537.36 \
+            (compatible; Bytespider; https://zhanzhang.toutiao.com/)";
+        let id = identify(bytespider).expect("Bytespider should still match");
+        assert_eq!(id.token, "bytespider");
+        assert_eq!(id.category, AiSearchAnswerCrawler);
     }
 
     #[test]
