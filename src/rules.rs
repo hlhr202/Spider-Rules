@@ -29,32 +29,43 @@ impl Identification {
             // Cross-verified: OpenAI confirms ChatGPT-User is user-initiated
             // and "not used for crawling the web in an automatic fashion".
             // The `*-user` naming convention is consistent across providers.
-            "chatgpt-user" | "claude-user" | "perplexity-user" | "amzn-user" | "mistralai-user" => {
+            "chatgpt-user" | "claude-user" | "perplexity-user" | "amzn-user" | "mistralai-user"
+            | "diffbot-user" | "exauser" | "kimi-user" => FetchOrigin::UserTriggeredFetch,
+
+            // Deep-research / deep-search / live RAG fetchers triggered by a
+            // user query. They retrieve and synthesize content without
+            // performing interactive actions on the page.
+            "gemini-deep-research" | "grok-deepsearch" | "kagi-fetcher" | "tavilybot" => {
                 FetchOrigin::UserTriggeredFetch
             }
 
-            // Deep-research / deep-search tools are user-initiated research
-            // sessions. They browse and synthesize content but do not complete
-            // purchase/signup actions on behalf of the user.
-            "gemini-deep-research" | "grok-deepsearch" => FetchOrigin::UserTriggeredFetch,
+            // Meta-ExternalFetcher fetches individual links at a user's request
+            // (Meta's official web crawlers docs note it may bypass robots.txt).
+            "meta-externalfetcher" => FetchOrigin::UserTriggeredFetch,
 
-            // Google Read-Aloud is triggered when a user clicks the "read
-            // aloud" button; it only retrieves page content for TTS.
-            // Inferred from product behaviour; Google's overview page lists
-            // "user-triggered fetchers" as a category but does not publish a
-            // per-UA mapping.
-            "google-read-aloud" => FetchOrigin::UserTriggeredFetch,
+            // Google official "user-triggered fetchers" (fetch-only):
+            // Read-Aloud (TTS), NotebookLM / GeminiNotebook (renamed Jul 2026),
+            // Pinpoint (Journalist Studio), and Gemini URL Context.
+            "google-read-aloud"
+            | "google-notebooklm"
+            | "google-gemininotebook"
+            | "google-pinpoint"
+            | "googleagent-urlcontext" => FetchOrigin::UserTriggeredFetch,
 
             // YandexUserProxy proxies a real user's request.
             "yandexuserproxy" => FetchOrigin::UserTriggeredFetch,
 
             // --- UserTriggeredAgentic: user triggered, can interact ---
             //
-            // GoogleAgent-Mariner is Google's Project Mariner agentic browser.
-            // It can click, fill forms, and navigate on behalf of the user.
-            // Inferred from Project Mariner's public description; no official
-            // UA-level documentation has been published.
-            "googleagent" => FetchOrigin::UserTriggeredAgentic,
+            // Agentic browsers capable of clicking, filling forms, and
+            // completing multi-step tasks on behalf of a user:
+            // - Google-Agent (official Google agent UA since Mar 2026) and
+            //   GoogleAgent-Mariner (Project Mariner)
+            // - Manus-User (Manus / Butterfly Effect agentic browser)
+            // - AmazonBuyForMe / NovaAct (Amazon shopping & workflow agents)
+            // - Kimi-Agent / MiniMaxAgent (agentic computer/browser use)
+            "googleagent" | "google-agent" | "manus-user" | "amazonbuyforme" | "novaact"
+            | "kimi-agent" | "minimaxagent" => FetchOrigin::UserTriggeredAgentic,
 
             // --- Everything else: autonomous crawl ---
             //
@@ -142,7 +153,26 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
+        // Official Google agent UA introduced March 2026 (`Google-Agent`,
+        // WITH hyphen) for agents hosted on Google infrastructure acting on
+        // behalf of a user.
+        token: "google-agent",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        // Gemini URL Context read-only fetcher (`GoogleAgent-URLContext`).
+        // Longer than `googleagent`, so it wins via longest-token matching and
+        // is classified as `UserTriggeredFetch` rather than agentic.
+        token: "googleagent-urlcontext",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
         token: "google-notebooklm",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        // Official rename of `Google-NotebookLM` rolled out in July 2026.
+        token: "google-gemininotebook",
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
@@ -166,11 +196,21 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
+        token: "cohere-training-data-crawler",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
         token: "ai2bot",
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
         token: "diffbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        // Longer than `diffbot`, so longest-token wins and maps to
+        // `UserTriggeredFetch`.
+        token: "diffbot-user",
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
@@ -194,6 +234,14 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
+        token: "mistralai-index",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "mistralai-training",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
         token: "gemini-deep-research",
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
@@ -207,6 +255,106 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
     },
     Identification {
         token: "grok-deepsearch",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "exasearchbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "exabot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "exauser",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "kagi-fetcher",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "tavilybot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "firecrawlagent",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "proratainc",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "manus-user",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "amazonbuyforme",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "novaact",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "azureai-searchbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "deepseekbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "kimibot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "kimi-searchbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "kimi-user",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "kimi-agent",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "moonshotbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "doubaobot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "qwenbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "tongyibot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "erniebot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "yiyanbot",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "chatglm-spider",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "minimaxagent",
+        category: UserAgentTokenCategory::AiSearchAnswerCrawler,
+    },
+    Identification {
+        token: "pangubot",
         category: UserAgentTokenCategory::AiSearchAnswerCrawler,
     },
     Identification {
@@ -239,6 +387,12 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
     },
     Identification {
         token: "google-read-aloud",
+        category: UserAgentTokenCategory::SearchIndexCrawler,
+    },
+    Identification {
+        // Officially added to Google's User-Triggered Fetchers documentation
+        // (Journalist Studio / Pinpoint).
+        token: "google-pinpoint",
         category: UserAgentTokenCategory::SearchIndexCrawler,
     },
     Identification {
@@ -463,6 +617,21 @@ pub(crate) const STATIC_USER_AGENT_RULES: &[Identification] = &[
     },
     Identification {
         token: "yodaobot",
+        category: UserAgentTokenCategory::SearchIndexCrawler,
+    },
+    Identification {
+        token: "kagibot",
+        category: UserAgentTokenCategory::SearchIndexCrawler,
+    },
+    Identification {
+        // Official Yahoo Slurp UA substring (includes `yahoo! ` prefix to
+        // avoid false positives on the bare word "slurp").
+        token: "yahoo! slurp",
+        category: UserAgentTokenCategory::SearchIndexCrawler,
+    },
+    Identification {
+        // Yahoo Japan crawler prefix (e.g. `Y!J-ASR`, `Y!J-BRW`, `Y!J-WSC`).
+        token: "y!j-",
         category: UserAgentTokenCategory::SearchIndexCrawler,
     },
     Identification {

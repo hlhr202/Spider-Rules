@@ -273,12 +273,12 @@ mod tests {
     #[test]
     fn removed_suspicious_google_tokens_no_longer_match() {
         // These tokens were removed in v0.2.0 (absent from Google's official
-        // common-crawlers list). Ensure they no longer match.
+        // crawlers list). Note: `Google-Pinpoint` was later restored in v0.6.0
+        // after Google officially documented it under User-Triggered Fetchers.
         for ua in [
             "Mozilla/5.0 (compatible; Google-Speakr/1.0)",
             "Mozilla/5.0 (compatible; Google-CWS/1.0)",
             "Mozilla/5.0 (compatible; GoogleProducer/1.0)",
-            "Mozilla/5.0 (compatible; Google-Pinpoint/1.0)",
             "Mozilla/5.0 (compatible; Google Favicon/1.0)",
         ] {
             assert!(
@@ -472,5 +472,308 @@ mod tests {
         assert_eq!(Autonomous.as_str(), "autonomous");
         assert_eq!(UserTriggeredFetch.as_str(), "user_triggered_fetch");
         assert_eq!(UserTriggeredAgentic.as_str(), "user_triggered_agentic");
+    }
+
+    // -----------------------------------------------------------------
+    // 2026 P0 / P1 / P2 rule additions & FetchOrigin refinements
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn p0_google_mistral_meta_updates() {
+        let cases: &[(&str, &str, UserAgentTokenCategory, FetchOrigin)] = &[
+            (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko; \
+                 compatible; Google-Agent; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-agent) \
+                 Chrome/140.0.0.0 Safari/537.36",
+                "google-agent",
+                AiSearchAnswerCrawler,
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) \
+                 Chrome/137.0.0.0 Safari/537.36 (compatible; Google-GeminiNotebook; \
+                 +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)",
+                "google-gemininotebook",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Google-NotebookLM/1.0)",
+                "google-notebooklm",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                // Longest-token override: `googleagent-urlcontext` beats `googleagent`
+                // and maps to fetch-only rather than agentic.
+                "Mozilla/5.0 (compatible; GoogleAgent-URLContext/1.0)",
+                "googleagent-urlcontext",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Google-Pinpoint/1.0)",
+                "google-pinpoint",
+                SearchIndexCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; \
+                 MistralAI-Index/1.0; +https://docs.mistral.ai/robots)",
+                "mistralai-index",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; \
+                 MistralAI-Training/1.0; +https://docs.mistral.ai/robots)",
+                "mistralai-training",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "meta-externalfetcher/1.1 (+/documentation/sharing/webmasters/web-crawlers)",
+                "meta-externalfetcher",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+        ];
+
+        for (ua, expected_token, expected_cat, expected_origin) in cases {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.token, *expected_token, "token mismatch; ua={ua:?}");
+            assert_eq!(id.category, *expected_cat, "category mismatch; ua={ua:?}");
+            assert_eq!(
+                id.fetch_origin(),
+                *expected_origin,
+                "fetch_origin mismatch; ua={ua:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn p1_ai_search_agents_and_traditional_search() {
+        let cases: &[(&str, &str, UserAgentTokenCategory, FetchOrigin)] = &[
+            (
+                "Mozilla/5.0 (compatible; ExaSearchBot/1.0; +https://exa.ai)",
+                "exasearchbot",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; ExaBot/3.0)",
+                "exabot",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; ExaUser/1.0)",
+                "exauser",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Kagibot/1.0; +https://kagi.com/bot)",
+                "kagibot",
+                SearchIndexCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; kagi-fetcher/1.0)",
+                "kagi-fetcher",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; TavilyBot/1.0)",
+                "tavilybot",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; FirecrawlAgent/1.0)",
+                "firecrawlagent",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                // Longest-token override: `diffbot-user` beats `diffbot`.
+                "Mozilla/5.0 (compatible; Diffbot-User/1.0; +http://www.diffbot.com)",
+                "diffbot-user",
+                AiSearchAnswerCrawler,
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; cohere-training-data-crawler/1.0)",
+                "cohere-training-data-crawler",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; ProRataInc/1.0)",
+                "proratainc",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Manus-User/1.0)",
+                "manus-user",
+                AiSearchAnswerCrawler,
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (compatible; AmazonBuyForMe/1.0)",
+                "amazonbuyforme",
+                AiSearchAnswerCrawler,
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (compatible; NovaAct/1.0)",
+                "novaact",
+                AiSearchAnswerCrawler,
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (compatible; AzureAI-SearchBot/1.0)",
+                "azureai-searchbot",
+                AiSearchAnswerCrawler,
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)",
+                "yahoo! slurp",
+                SearchIndexCrawler,
+                Autonomous,
+            ),
+            (
+                "Y!J-ASR/0.1 crawler (http://www.yahoo-help.jp/app/answers/detail/p/595/a_id/42716/)",
+                "y!j-",
+                SearchIndexCrawler,
+                Autonomous,
+            ),
+        ];
+
+        for (ua, expected_token, expected_cat, expected_origin) in cases {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.token, *expected_token, "token mismatch; ua={ua:?}");
+            assert_eq!(id.category, *expected_cat, "category mismatch; ua={ua:?}");
+            assert_eq!(
+                id.fetch_origin(),
+                *expected_origin,
+                "fetch_origin mismatch; ua={ua:?}"
+            );
+        }
+
+        // Bare "Slurp" without "Yahoo! " prefix must not match.
+        assert!(
+            identify("Mozilla/5.0 CustomApp Slurp/1.0").is_none(),
+            "bare Slurp must not match"
+        );
+    }
+
+    #[test]
+    fn p2_chinese_llm_crawlers() {
+        let cases: &[(&str, &str, FetchOrigin)] = &[
+            (
+                "Mozilla/5.0 (compatible; DeepSeekBot/1.0)",
+                "deepseekbot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; KimiBot/1.0)",
+                "kimibot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Kimi-SearchBot/1.0)",
+                "kimi-searchbot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Kimi-User/1.0)",
+                "kimi-user",
+                UserTriggeredFetch,
+            ),
+            (
+                "Mozilla/5.0 (compatible; Kimi-Agent/1.0)",
+                "kimi-agent",
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (compatible; MoonshotBot/1.0)",
+                "moonshotbot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; DoubaoBot/1.0)",
+                "doubaobot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; QwenBot/1.0)",
+                "qwenbot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; TongyiBot/1.0)",
+                "tongyibot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; ERNIEBot/1.0)",
+                "erniebot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; YiyanBot/1.0)",
+                "yiyanbot",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; ChatGLM-Spider/1.0)",
+                "chatglm-spider",
+                Autonomous,
+            ),
+            (
+                "Mozilla/5.0 (compatible; MiniMaxAgent/1.0)",
+                "minimaxagent",
+                UserTriggeredAgentic,
+            ),
+            (
+                "Mozilla/5.0 (compatible; PanguBot/1.0)",
+                "pangubot",
+                Autonomous,
+            ),
+        ];
+
+        for (ua, expected_token, expected_origin) in cases {
+            let id = identify(ua).unwrap_or_else(|| panic!("should match: {ua:?}"));
+            assert_eq!(id.token, *expected_token, "token mismatch; ua={ua:?}");
+            assert_eq!(id.category, AiSearchAnswerCrawler, "ua={ua:?}");
+            assert_eq!(
+                id.fetch_origin(),
+                *expected_origin,
+                "fetch_origin mismatch; ua={ua:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn rules_table_invariants_lowercase_and_unique() {
+        let mut seen = std::collections::HashSet::new();
+        for rule in super::rules::STATIC_USER_AGENT_RULES {
+            assert_eq!(
+                rule.token,
+                rule.token.to_ascii_lowercase(),
+                "rule token must be lowercase ASCII: {:?}",
+                rule.token
+            );
+            assert!(!rule.token.is_empty(), "rule token must not be empty");
+            assert!(
+                seen.insert(rule.token),
+                "duplicate rule token found: {:?}",
+                rule.token
+            );
+        }
     }
 }

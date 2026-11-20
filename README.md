@@ -1,5 +1,8 @@
 # Spider Rules
 
+[![Crates.io](https://img.shields.io/crates/v/spider-rules.svg)](https://crates.io/crates/spider-rules)
+[![Docs.rs](https://docs.rs/spider-rules/badge.svg)](https://docs.rs/spider-rules)
+
 Spider/crawler identification rules, extracted as a common dependency for
 multiple internal services. The public surface is intentionally minimal:
 callers pass a single `user_agent: &str` and get back the matched rule.
@@ -59,9 +62,13 @@ The classification is cross-verified against:
  in an automatic fashion; because these actions are initiated by a user")
 
 User-triggered tokens: `chatgpt-user`, `claude-user`, `perplexity-user`,
-`amzn-user`, `mistralai-user`, `gemini-deep-research`, `grok-deepsearch`,
-`google-read-aloud`, `yandexuserproxy` (fetch-only); `googleagent` /
-GoogleAgent-Mariner (agentic).
+`amzn-user`, `mistralai-user`, `diffbot-user`, `exauser`, `kimi-user`,
+`meta-externalfetcher`, `gemini-deep-research`, `grok-deepsearch`,
+`kagi-fetcher`, `tavilybot`, `google-read-aloud`, `google-notebooklm`,
+`google-gemininotebook`, `google-pinpoint`, `googleagent-urlcontext`,
+`yandexuserproxy` (fetch-only); `googleagent` / GoogleAgent-Mariner,
+`google-agent`, `manus-user`, `amazonbuyforme`, `novaact`, `kimi-agent`,
+`minimaxagent` (agentic).
 
 ## Command-line demo
 
